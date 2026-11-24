@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f8f6">
+    <meta name="description" content="A hands-on physics learning lab for testing which conditions an explanation depends on.">
+    <title>Condition Lab | Test the premise</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="Condition Lab home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>Condition Lab</span>
+      </a>
+      <div class="topbar-meta"><span class="status-dot"></span> Physics / Newton's second law</div>
+      <button class="icon-button" id="resetButton" type="button" aria-label="Reset experiment" title="Reset experiment">↺</button>
+    </header>
+
+    <main id="top">
+      <section class="intro" aria-labelledby="pageTitle">
+        <div class="intro-copy">
+          <p class="eyebrow">A small lab for big assumptions</p>
+          <h1 id="pageTitle">Test the premise.<br><span>Then trust the result.</span></h1>
+          <p class="intro-text">Change one condition at a time. See what the mechanism predicts, and whether your counterexample still tests the original claim.</p>
+        </div>
+        <div class="intro-note">
+          <span class="note-number">01</span>
+          <p>This model uses <strong>F = m × a</strong>. It does not grade your reasoning or infer what you mean.</p>
+        </div>
+      </section>
+
+      <section class="claim-band" aria-label="Claim under test">
+        <div class="claim-label"><span class="claim-index">CLAIM UNDER TEST</span><span class="claim-tag">Newton's 2nd law</span></div>
+        <p class="claim-text">At the <strong>same net force</strong>, increasing mass lowers acceleration.</p>
+        <p class="claim-formula">a = F / m</p>
+      </section>
+
+      <section class="lab-layout" aria-label="Interactive experiment">
+        <div class="controls-panel">
+          <div class="section-heading">
+            <div><p class="eyebrow">01 / Set conditions</p><h2>Change the system</h2></div>
+            <span class="live-label"><span class="status-dot"></span> Live model</span>
+          </div>
+
+          <label class="control-row" for="forceInput">
+            <span class="control-title"><span>Net force</span><strong><output id="forceValue">12.0</output> <small>N</small></strong></span>
+            <input id="forceInput" type="range" min="1" max="30" step="0.5" value="12" aria-describedby="forceHelp">
+            <span class="range-ends"><span>1 N</span><span id="forceHelp">30 N</span></span>
+          </label>
+
+          <label class="control-row" for="massInput">
+            <span class="control-title"><span>Cart mass</span><strong><output id="massValue">2.0</output> <small>kg</small></strong></span>
+            <input id="massInput" type="range" min="0.5" max="10" step="0.5" value="2" aria-describedby="massHelp">
+            <span class="range-ends"><span>0.5 kg</span><span id="massHelp">10 kg</span></span>
+          </label>
+
+          <div class="condition-check">
+            <div class="condition-check-icon" aria-hidden="true">↔</div>
+            <div><strong>What stayed the same?</strong><p id="conditionText">Force is still 12.0 N. The claim's condition holds.</p></div>
+          </div>
+
+          <div class="action-row">
+            <button class="primary-button" id="addTrialButton" type="button"><span aria-hidden="true">＋</span> Save this trial</button>
+            <button class="text-button" id="makeCounterexampleButton" type="button">Try a condition shift <span aria-hidden="true">↗</span></button>
+          </div>
+          <p class="privacy-note"><span aria-hidden="true">◉</span> Trials stay in this browser. Nothing is uploaded.</p>
+        </div>
+
+        <div class="simulation-panel">
+          <div class="section-heading sim-heading">
+            <div><p class="eyebrow">02 / Observe</p><h2>Mechanism view</h2></div>
+            <span class="equation-chip">F = m × a</span>
+          </div>
+          <div class="simulation-stage">
+            <canvas id="simulationCanvas" role="img" aria-label="A cart and force arrow change with the selected mass and force."></canvas>
+            <div class="stage-legend"><span><i class="legend-force"></i> applied force</span><span><i class="legend-mass"></i> mass</span></div>
+          </div>
+          <div class="result-strip" aria-live="polite">
+            <div class="result-main"><span>Predicted acceleration</span><strong><output id="accelerationValue">6.00</output><small>m/s²</small></strong></div>
+            <div class="result-divider"></div>
+            <div class="result-compare"><span>Baseline</span><strong><output id="baselineAcceleration">6.00</output><small>m/s²</small></strong></div>
+            <div class="delta-indicator" id="deltaIndicator">No change</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="comparison-section" aria-labelledby="comparisonTitle">
+        <div class="section-heading comparison-heading">
+          <div><p class="eyebrow">03 / Compare</p><h2 id="comparisonTitle">Your experiment trail</h2></div>
+          <div class="comparison-actions"><span id="trialCount">1 saved trial</span><button id="exportButton" class="text-button" type="button">Export CSV <span aria-hidden="true">↓</span></button></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th scope="col">Trial</th><th scope="col">Force</th><th scope="col">Mass</th><th scope="col">Acceleration</th><th scope="col">Condition check</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+            <tbody id="trialRows"></tbody>
+          </table>
+        </div>
+        <p class="comparison-footnote">A changed result is not automatically a counterexample. First check whether the original conditions still hold.</p>
+      </section>
+
+      <section class="method-band" aria-label="Model boundary">
+        <div><span class="method-step">MODEL</span><p>Newton's second law, with no friction or drag.</p></div>
+        <div><span class="method-step">MEASURE</span><p>Acceleration is calculated as net force divided by mass.</p></div>
+        <div><span class="method-step">LIMIT</span><p>This focused prototype tests one mechanism; it does not represent every physical system.</p></div>
+      </section>
+    </main>
+
+    <footer class="footer"><span>Condition Lab</span><span>Learn by changing the conditions, not hiding them.</span><span>Local-first · No AI grading</span></footer>
+    <script src="app.js" defer></script>
+  </body>
+</html>
