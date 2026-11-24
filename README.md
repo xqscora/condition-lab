@@ -6,7 +6,7 @@ Condition Lab is a small, local-first physics learning lab. It makes a scientifi
 
 When someone offers a counterexample, did the original conditions stay the same? In this prototype, the claim is: **at the same net force, increasing mass lowers acceleration.** The learner can adjust force and mass, observe the cart model, save multiple trials, compare the condition, and export the run table as CSV.
 
-The model is Newton's second law, `a = F / m`, with friction and drag omitted. If force changes along with mass, the app flags that the run does not isolate the mass effect. It does not decide whether a learner's free-form explanation is correct.
+The model is Newton's second law, `a = F / m`, with friction and drag omitted. A learner can choose any valid force/mass setup as the reference, then compare later trials against that saved reference. Each trial stores its own reference values, so changing the reference later does not rewrite the meaning of earlier runs. If force changes along with mass, the app flags that the run does not isolate the mass effect. It does not decide whether a learner's free-form explanation is correct.
 
 ## Run it
 
@@ -18,11 +18,11 @@ python -m http.server 8517
 
 Then visit `http://127.0.0.1:8517/competitions/stem2connect-2026-condition-lab/` from the workspace root, or run the server from this folder and visit `http://127.0.0.1:8517/`.
 
-No dependencies, account, or network access are required. Trial data is stored in this browser's local storage. Use **Export CSV** to save a copy.
+No dependencies, account, or network access are required. Trial data and the selected reference are stored in this browser's local storage. The CSV includes each trial's force, mass, calculated acceleration, and the reference force/mass used for its condition check.
 
 ## Recorded demo
 
-[Watch the 16-second browser demo](assets/condition-lab-demo.webm). It records a same-force mass comparison, then a force change that the app flags as not isolating mass.
+[Watch the 16-second browser demo](assets/condition-lab-demo.webm) (WebM) or [download the MP4 version](assets/condition-lab-demo.mp4). It records a same-force mass comparison, then a force change that the app flags as not isolating mass.
 
 ## AI disclosure
 

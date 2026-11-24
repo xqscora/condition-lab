@@ -1,6 +1,7 @@
 (() => {
   const STORAGE_KEY = "condition-lab-trials-v1";
-  const BASELINE = { force: 12, mass: 2 };
+  const BASELINE_KEY = "condition-lab-baseline-v1";
+  const DEFAULT_BASELINE = { force: 12, mass: 2 };
   const forceInput = document.getElementById("forceInput");
   const massInput = document.getElementById("massInput");
   const forceValue = document.getElementById("forceValue");
@@ -10,10 +11,12 @@
   const conditionText = document.getElementById("conditionText");
   const conditionCheck = document.querySelector(".condition-check");
   const deltaIndicator = document.getElementById("deltaIndicator");
+  const baselineSummary = document.getElementById("baselineSummary");
   const canvas = document.getElementById("simulationCanvas");
   const context = canvas.getContext("2d");
   const rows = document.getElementById("trialRows");
   let trials = [];
+  let baseline = readBaseline();
 
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
@@ -26,14 +29,31 @@
     return value && Number.isFinite(value.force) && Number.isFinite(value.mass) && Number.isFinite(value.acceleration) && typeof value.id === "string";
   }
 
+  function readBaseline() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(BASELINE_KEY) || "null");
+      if (saved && Number.isFinite(saved.force) && Number.isFinite(saved.mass) && saved.force >= 1 && saved.force <= 30 && saved.mass >= 0.5 && saved.mass <= 10) {
+        return { force: saved.force, mass: saved.mass };
+      }
+    } catch { /* Fall back to the reference setup. */ }
+    return { ...DEFAULT_BASELINE };
+  }
+
+  function referenceForTrial(trial) {
+    return {
+      force: Number.isFinite(trial.baselineForce) ? trial.baselineForce : DEFAULT_BASELINE.force,
+      mass: Number.isFinite(trial.baselineMass) ? trial.baselineMass : DEFAULT_BASELINE.mass,
+    };
+  }
+
   function readState() {
     const force = Number(forceInput.value);
     const mass = Number(massInput.value);
     return { force, mass, acceleration: force / mass };
   }
 
-  function sameForce(state) {
-    return Math.abs(state.force - BASELINE.force) < 0.001;
+  function sameForce(state, reference = baseline) {
+    return Math.abs(state.force - reference.force) < 0.001;
   }
 
   function draw() {
@@ -139,7 +159,7 @@
         }
         const status = document.createElement("td");
         const pill = document.createElement("span");
-        const held = sameForce(trial);
+        const held = sameForce(trial, referenceForTrial(trial));
         pill.className = `condition-pill${held ? "" : " shifted"}`;
         pill.textContent = held ? "Same force" : "Force changed";
         status.append(pill);
@@ -167,19 +187,20 @@
 
   function update() {
     const state = readState();
-    const baseA = BASELINE.force / BASELINE.mass;
+    const baseA = baseline.force / baseline.mass;
     forceValue.value = state.force.toFixed(1);
     massValue.value = state.mass.toFixed(1);
     accelerationValue.value = state.acceleration.toFixed(2);
     baselineAcceleration.value = baseA.toFixed(2);
+    baselineSummary.textContent = `${baseline.force.toFixed(1)} N · ${baseline.mass.toFixed(1)} kg · ${baseA.toFixed(2)} m/s²`;
     forceInput.style.setProperty("--progress", `${((state.force - 1) / 29) * 100}%`);
     massInput.style.setProperty("--progress", `${((state.mass - 0.5) / 9.5) * 100}%`);
 
     const forceHeld = sameForce(state);
     conditionCheck.classList.toggle("changed", !forceHeld);
     conditionText.textContent = forceHeld
-      ? `Force is still ${state.force.toFixed(1)} N. The claim's condition holds.`
-      : `Force changed from ${BASELINE.force.toFixed(1)} N to ${state.force.toFixed(1)} N. This run does not isolate mass.`;
+      ? `Force matches the ${baseline.force.toFixed(1)} N reference. The claim's condition holds.`
+      : `Force changed from the ${baseline.force.toFixed(1)} N reference to ${state.force.toFixed(1)} N. This run does not isolate mass.`;
 
     const delta = state.acceleration - baseA;
     deltaIndicator.classList.toggle("down", delta < -0.005);
@@ -190,15 +211,23 @@
 
   function addTrial() {
     const state = readState();
-    trials.push({ ...state, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` });
+    trials.push({
+      ...state,
+      baselineForce: baseline.force,
+      baselineMass: baseline.mass,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    });
     save();
     renderTrials();
   }
 
   function exportCsv() {
     if (!trials.length) return;
-    const lines = ["trial,force_N,mass_kg,acceleration_m_s2,same_force_as_baseline"];
-    trials.forEach((trial, index) => lines.push([`T${String(index + 1).padStart(2, "0")}`, trial.force.toFixed(1), trial.mass.toFixed(1), trial.acceleration.toFixed(4), sameForce(trial)].join(",")));
+    const lines = ["trial,force_N,mass_kg,acceleration_m_s2,baseline_force_N,baseline_mass_kg,same_force_as_baseline"];
+    trials.forEach((trial, index) => {
+      const reference = referenceForTrial(trial);
+      lines.push([`T${String(index + 1).padStart(2, "0")}`, trial.force.toFixed(1), trial.mass.toFixed(1), trial.acceleration.toFixed(4), reference.force.toFixed(1), reference.mass.toFixed(1), sameForce(trial, reference)].join(","));
+    });
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -209,18 +238,44 @@
 
   document.getElementById("addTrialButton").addEventListener("click", addTrial);
   document.getElementById("makeCounterexampleButton").addEventListener("click", () => {
-    const mass = Number(massInput.value);
-    const targetMass = Math.min(10, mass + 1);
-    massInput.value = String(targetMass);
-    forceInput.value = String(Math.min(30, Number(forceInput.value) * targetMass / mass));
+    const forceMin = Number(forceInput.min);
+    const forceMax = Number(forceInput.max);
+    const forceStep = Number(forceInput.step);
+    const massMin = Number(massInput.min);
+    const massMax = Number(massInput.max);
+    const massStep = Number(massInput.step);
+    const referenceA = baseline.force / baseline.mass;
+    const candidates = [];
+    for (let mass = massMin; mass <= massMax; mass += massStep) {
+      if (Math.abs(mass - baseline.mass) < massStep / 2) continue;
+      for (let force = forceMin; force <= forceMax; force += forceStep) {
+        if (Math.abs(force - baseline.force) < forceStep / 2) continue;
+        candidates.push({ force, mass, error: Math.abs(force / mass - referenceA) });
+      }
+    }
+    candidates.sort((a, b) => a.error - b.error || Math.abs(a.mass - baseline.mass) - Math.abs(b.mass - baseline.mass));
+    if (!candidates.length) return;
+    forceInput.value = String(candidates[0].force);
+    massInput.value = String(candidates[0].mass);
     update();
   });
   document.getElementById("resetButton").addEventListener("click", () => {
-    forceInput.value = String(BASELINE.force);
-    massInput.value = String(BASELINE.mass);
+    forceInput.value = String(baseline.force);
+    massInput.value = String(baseline.mass);
     trials = [];
     save();
     renderTrials();
+    update();
+  });
+  document.getElementById("setBaselineButton").addEventListener("click", () => {
+    const state = readState();
+    baseline = { force: state.force, mass: state.mass };
+    try { localStorage.setItem(BASELINE_KEY, JSON.stringify(baseline)); } catch { /* Keep the current session usable. */ }
+    update();
+  });
+  document.getElementById("resetBaselineButton").addEventListener("click", () => {
+    baseline = { ...DEFAULT_BASELINE };
+    try { localStorage.removeItem(BASELINE_KEY); } catch { /* Keep the current session usable. */ }
     update();
   });
   document.getElementById("exportButton").addEventListener("click", exportCsv);
