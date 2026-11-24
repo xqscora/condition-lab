@@ -20,6 +20,10 @@ Then visit `http://127.0.0.1:8517/competitions/stem2connect-2026-condition-lab/`
 
 No dependencies, account, or network access are required. Trial data is stored in this browser's local storage. Use **Export CSV** to save a copy.
 
+## Recorded demo
+
+[Watch the 16-second browser demo](assets/condition-lab-demo.webm). It records a same-force mass comparison, then a force change that the app flags as not isolating mass.
+
 ## AI disclosure
 
 Codex was used for brainstorming, implementation drafting, and debugging. The running project does not call an AI model or send user inputs to a service. Its output is a deterministic calculation from the displayed equation; it is not an AI tutor, a correctness score, or a complete physics simulator.
